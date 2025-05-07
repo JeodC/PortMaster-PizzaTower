@@ -1,0 +1,101 @@
+#!/bin/bash
+# Set GAMEDIR to the current directory and set logfile
+GAMEDIR="$PWD"
+LOGFILE="$GAMEDIR/patchlog.txt"
+START_TIME=$(date +%s)
+
+# Redirect output and error to the log file
+exec > >(tee -a "$LOGFILE") 2>&1
+echo "GAMEDIR is set to: $GAMEDIR"
+
+# Exports
+export DATADIR="$GAMEDIR/assets"
+export LICENSEDIR="$GAMEDIR/licenses/pizzatower"
+export DATAFILE="$GAMEDIR/pizzatower.port"
+export SAVEDIR=$(jq -r '.save_dir' "$GAMEDIR/gmloader.json")
+export TOOLDIR="$GAMEDIR/tools"
+export TMPDIR="$GAMEDIR/tmp"
+export PATH="$GAMEDIR/tools:$PATH"
+
+cd "$GAMEDIR"
+
+prepare_assets() {
+    # Delete files we don't need
+    rm -rf $DATADIR/*.exe $DATADIR/*.dll $DATADIR/.gitkeep
+    
+    # Create the savedir
+    mkdir -p $SAVEDIR
+    
+    # Temporarily move sounds to the savedir
+    mv $DATADIR/sound $SAVEDIR/sound
+    
+    # Move game licenses to our license folder
+    mkdir -p $LICENSEDIR
+    mv $DATADIR/licenses/* $LICENSEDIR
+    rm -rf $DATADIR/licenses
+}
+
+# Clean out $DATAFILE except for the library we need
+purge_datafile() {
+    # Unzip the data file
+    rm -rf "$TMPDIR" && mkdir -p "$TMPDIR"
+    unzip -q "$DATAFILE" "lib/*" -d "$TMPDIR"
+
+    # Clean specific directories and files
+    rm -rf "$TMPDIR/lib/armeabi-v7a"
+
+    # Remove original DATAFILE and create new zip
+    rm -f "$DATAFILE"
+    cd "$TMPDIR"
+    zip -r -0 -q "$GAMEDIR/$(basename "$DATAFILE")" .
+    cd "$GAMEDIR"
+}
+
+# Externalize game textures with compression
+dump_textures() {
+    # Purge cache before operations
+    rm -rf "$TMPDIR/"*
+    
+    # Begin texture operations
+    dotnet "$TOOLDIR/utmt-cli/UndertaleModCli.dll" \
+        dump "$GAMEDIR/assets/data.win" \
+        -e "$GAMEDIR/assets/textures" "$GAMEDIR/assets/game.droid"
+
+    if [ $? -ne 0 ]; then
+        echo "Patch failed to apply."
+        exit 1
+    else
+        rm -f "$GAMEDIR/assets/data.win"
+        mv "$GAMEDIR/assets/textures/" "$GAMEDIR/$SAVEDIR/textures/"
+        rm -rf $TMPDIR
+    fi
+}
+
+# Add assets to $DATAFILE
+zip_archive() {
+        echo "Finishing up..."
+        zip -r -0 $DATAFILE ./assets/
+        rm -rf $DATADIR/*
+        mv $SAVEDIR/sound $DATADIR/sound
+        sleep 1
+}
+
+# Main calls
+process_game() {
+    prepare_assets
+    purge_datafile
+    dump_textures
+    zip_archive
+    sleep 1
+    
+    # Measure time to complete
+	END_TIME=$(date +%s)
+    DURATION=$((END_TIME - START_TIME))
+    echo "Script completed in $DURATION seconds"
+    
+    # Final completion message
+    echo "Patching process complete!"
+}
+
+# Call the function
+process_game
