@@ -22,6 +22,9 @@ export PATH="$GAMEDIR/tools:$PATH"
 
 cd "$GAMEDIR"
 
+# Set up trap for cleaning TMPDIR on exit
+trap 'rm -rf "$TMPDIR"; echo "Cleaned up temporary files."' EXIT
+
 # Bail if the dotnet runtime is missing or wasn't mounted
 if ! command -v dotnet >/dev/null 2>&1; then
     echo "Dotnet is required but not installed. Please install the runtime."
