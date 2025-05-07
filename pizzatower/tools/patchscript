@@ -5,23 +5,33 @@ LOGFILE="$GAMEDIR/patchlog.txt"
 START_TIME=$(date +%s)
 
 # Redirect output and error to the log file
+: > "$LOGFILE"
 exec > >(tee -a "$LOGFILE") 2>&1
-echo "GAMEDIR is set to: $GAMEDIR"
+echo "Starting patchscript..."
 
 # Exports
 export DATADIR="$GAMEDIR/assets"
 export LICENSEDIR="$GAMEDIR/licenses/pizzatower"
 export DATAFILE="$GAMEDIR/pizzatower.port"
-export SAVEDIR=$(jq -r '.save_dir' "$GAMEDIR/gmloader.json")
+SAVEDIR=$(jq -r '.save_dir // empty' "$GAMEDIR/gmloader.json")
+[ -z "$SAVEDIR" ] && SAVEDIR="$GAMEDIR/saves"
+export SAVEDIR
 export TOOLDIR="$GAMEDIR/tools"
 export TMPDIR="$GAMEDIR/tmp"
 export PATH="$GAMEDIR/tools:$PATH"
 
 cd "$GAMEDIR"
 
+# Bail if the dotnet runtime is missing or wasn't mounted
+if ! command -v dotnet >/dev/null 2>&1; then
+    echo "Dotnet is required but not installed. Please install the runtime."
+    echo "Patching process failed."
+    exit 1
+fi
+
 prepare_assets() {
     # Delete files we don't need
-    rm -rf $DATADIR/*.exe $DATADIR/*.dll $DATADIR/.gitkeep
+    rm -rf "$DATADIR"/*.exe "$DATADIR"/*.dll "$DATADIR"/.gitkeep
     
     # Create the savedir
     mkdir -p $SAVEDIR
@@ -31,24 +41,38 @@ prepare_assets() {
     
     # Move game licenses to our license folder
     mkdir -p $LICENSEDIR
-    mv $DATADIR/licenses/* $LICENSEDIR
+    [ -d "$DATADIR/licenses" ] && mv "$DATADIR/licenses/"* "$LICENSEDIR"
     rm -rf $DATADIR/licenses
 }
 
 # Clean out $DATAFILE except for the library we need
 purge_datafile() {
-    # Unzip the data file
+    # Clean and recreate the TMPDIR
     rm -rf "$TMPDIR" && mkdir -p "$TMPDIR"
-    unzip -q "$DATAFILE" "lib/*" -d "$TMPDIR"
 
-    # Clean specific directories and files
-    rm -rf "$TMPDIR/lib/armeabi-v7a"
+    # Attempt to unzip
+    if ! unzip -q "$DATAFILE" "lib/*" -d "$TMPDIR"; then
+        echo "[PURGE_DATAFILE]: Failed to unzip $DATAFILE"
+        exit 1
+    fi
 
-    # Remove original DATAFILE and create new zip
+    # Remove unwanted architecture
+    if [ -d "$TMPDIR/lib/armeabi-v7a" ]; then
+        rm -rf "$TMPDIR/lib/armeabi-v7a"
+        echo "Removed armeabi-v7a libraries"
+    fi
+
+    # Repackage the cleaned content
     rm -f "$DATAFILE"
     cd "$TMPDIR"
-    zip -r -0 -q "$GAMEDIR/$(basename "$DATAFILE")" .
+
+    if ! zip -r -0 -q "$GAMEDIR/$(basename "$DATAFILE")" .; then
+        echo "[PURGE_DATAFILE]: Failed to create new datafile."
+        exit 1
+    fi
+
     cd "$GAMEDIR"
+    echo "Data file repackaged successfully."
 }
 
 # Externalize game textures with compression
@@ -62,7 +86,7 @@ dump_textures() {
         -e "$GAMEDIR/assets/textures" "$GAMEDIR/assets/game.droid"
 
     if [ $? -ne 0 ]; then
-        echo "Patch failed to apply."
+        echo "[DOTNET]: Patch failed to apply."
         exit 1
     else
         rm -f "$GAMEDIR/assets/data.win"
@@ -76,16 +100,16 @@ zip_archive() {
         echo "Finishing up..."
         zip -r -0 $DATAFILE ./assets/
         rm -rf $DATADIR/*
-        mv $SAVEDIR/sound $DATADIR/sound
+        [ -d "$DATADIR/sound" ] && mv "$DATADIR/sound" "$SAVEDIR/sound"
         sleep 1
 }
 
 # Main calls
 process_game() {
-    prepare_assets
-    purge_datafile
-    dump_textures
-    zip_archive
+    prepare_assets || { echo "Patching process failed."; exit 1; }
+    purge_datafile || { echo "Patching process failed."; exit 1; }
+    dump_textures || { echo "Patching process failed."; exit 1; }
+    zip_archive || { echo "Patching process failed."; exit 1; }
     sleep 1
     
     # Measure time to complete
