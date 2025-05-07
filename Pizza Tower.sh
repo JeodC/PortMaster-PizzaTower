@@ -32,16 +32,9 @@ cd "$GAMEDIR"
 # Log execution
 > "$GAMEDIR/log.txt" && exec > >(tee "$GAMEDIR/log.txt") 2>&1
 
-# Setup mono environment variables
-DOTNETDIR="$HOME/mono"
-DOTNETFILE="$controlfolder/libs/dotnet-runtime-8.0.12.squashfs"
-$ESUDO mkdir -p "$DOTNETDIR"
-$ESUDO umount "$DOTNETFILE" || true
-$ESUDO mount "$DOTNETFILE" "$DOTNETDIR"
-
 # Setup other misc environment variables
-export LD_LIBRARY_PATH="$GAMEDIR/libs.aarch64":"$LD_LIBRARY_PATH"
-export PATH="$DOTNETDIR":"$PATH"
+export LD_LIBRARY_PATH="$GAMEDIR/libs.${DEVICE_ARCH}":"$LD_LIBRARY_PATH"
+export SDL_GAMECONTROLLERCONFIG="$sdl_controllerconfig"
 
 # Ensure executable permissions
 $ESUDO chmod +x "$GAMEDIR/gmloadernext.aarch64"
@@ -50,15 +43,24 @@ $ESUDO chmod +x "$GAMEDIR/tools/patchscript"
 # Not patched? let's perform first time setup
 if [ ! -f patchlog.txt ] || [ -f "$GAMEDIR/assets/data.win" ]; then
 	if [ -f "$controlfolder/utils/patcher.txt" ]; then
-		set -o pipefail		
+		set -o pipefail
+        
+        # Setup mono environment variables
+        DOTNETDIR="$HOME/mono"
+        DOTNETFILE="$controlfolder/libs/dotnet-runtime-8.0.12.squashfs"
+        $ESUDO mkdir -p "$DOTNETDIR"
+        $ESUDO umount "$DOTNETFILE" || true
+        $ESUDO mount "$DOTNETFILE" "$DOTNETDIR"
+        export PATH="$DOTNETDIR":"$PATH"
+        
 		# Setup and execute the Portmaster Patcher utility with our patch file
 		export PATCHER_FILE="$GAMEDIR/tools/patchscript"
 		export PATCHER_GAME="Pizza Tower"
 		export PATCHER_TIME="5 to 10 minutes"
 		source "$controlfolder/utils/patcher.txt"
+        $ESUDO umount "$DOTNETDIR"
 	else
 		echo "This port requires the latest version of PortMaster."
-		$ESUDO umount "$DOTNETDIR"
 		pm_finish
 		exit 1
 	fi
@@ -89,9 +91,8 @@ if [ -f "$GAMEDIR/swapabxy.txt" ]; then
     swapabxy
 fi
 
-$GPTOKEYB "gmloadernext.aarch64" & 
+$GPTOKEYB "gmloadernext.aarch64" xbox360 & 
 pm_platform_helper "$GAMEDIR/gmloadernext.aarch64" > /dev/null
 $TASKSET ./gmloadernext.aarch64 -c gmloader.json
-$ESUDO umount "$DOTNETDIR"
 
 pm_finish
