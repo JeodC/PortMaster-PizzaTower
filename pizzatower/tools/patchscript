@@ -6,7 +6,7 @@ START_TIME=$(date +%s)
 
 # Redirect output and error to the log file
 : > "$LOGFILE"
-exec > >(tee -a "$LOGFILE") 2>&1
+exec >"$LOGFILE" 2>&1
 echo "Starting patchscript..."
 
 # Exports
@@ -23,7 +23,7 @@ export PATH="$GAMEDIR/tools:$PATH"
 cd "$GAMEDIR"
 
 # Set up trap for cleaning TMPDIR on exit
-trap 'rm -rf "$TMPDIR"; echo "Cleaned up temporary files."' EXIT
+trap 'rm -rf "$TMPDIR"; echo "Cleaned up temporary files." >> "$LOGFILE"' 0
 
 # Bail if the dotnet runtime is missing or wasn't mounted
 if ! command -v dotnet >/dev/null 2>&1; then
