@@ -104,6 +104,7 @@ zip_archive() {
         zip -r -0 $DATAFILE ./assets/
         rm -rf $DATADIR/*
         mv "$SAVEDIR/sound" "$DATADIR/sound"
+        mv "$SAVEDIR/textures" "$DATADIR/textures"
         sleep 1
 }
 
