@@ -103,7 +103,7 @@ zip_archive() {
         echo "Finishing up..."
         zip -r -0 $DATAFILE ./assets/
         rm -rf $DATADIR/*
-        [ -d "$DATADIR/sound" ] && mv "$DATADIR/sound" "$SAVEDIR/sound"
+        mv "$SAVEDIR/sound" "$DATADIR/sound"
         sleep 1
 }
 
