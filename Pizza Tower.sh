@@ -53,9 +53,9 @@ if [ ! -f patchlog.txt ] || [ -f "$GAMEDIR/assets/data.win" ]; then
         $ESUDO mount "$DOTNETFILE" "$DOTNETDIR"
         export PATH="$DOTNETDIR":"$PATH"
         
-		# Setup and execute the Portmaster Patcher utility with our patch file
-		export PATCHER_FILE="$GAMEDIR/tools/patchscript"
-		export PATCHER_GAME="Pizza Tower"
+        # Setup and execute the Portmaster Patcher utility with our patch file
+        export PATCHER_FILE="$GAMEDIR/tools/patchscript"
+        export PATCHER_GAME="Pizza Tower"
 		export PATCHER_TIME="5 to 10 minutes"
 		source "$controlfolder/utils/patcher.txt"
         $ESUDO umount "$DOTNETDIR"
@@ -91,7 +91,7 @@ if [ -f "$GAMEDIR/swapabxy.txt" ]; then
     swapabxy
 fi
 
-$GPTOKEYB "gmloadernext.aarch64" xbox360 & 
+$GPTOKEYB "gmloadernext.aarch64" -c "pizza.gptk" & 
 pm_platform_helper "$GAMEDIR/gmloadernext.aarch64" > /dev/null
 $TASKSET ./gmloadernext.aarch64 -c gmloader.json
 
