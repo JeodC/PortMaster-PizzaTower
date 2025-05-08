@@ -40,7 +40,7 @@ export SDL_GAMECONTROLLERCONFIG="$sdl_controllerconfig"
 $ESUDO chmod +x "$GAMEDIR/gmloadernext.aarch64"
 $ESUDO chmod +x "$GAMEDIR/tools/patchscript"
 
-# Not patched? let's perform first time setup
+# Check if we need to patch
 if [ ! -f patchlog.txt ] || [ -f "$GAMEDIR/assets/data.win" ]; then
 	if [ -f "$controlfolder/utils/patcher.txt" ]; then
 		set -o pipefail
@@ -60,7 +60,7 @@ if [ ! -f patchlog.txt ] || [ -f "$GAMEDIR/assets/data.win" ]; then
 		source "$controlfolder/utils/patcher.txt"
         $ESUDO umount "$DOTNETDIR"
 	else
-		echo "This port requires the latest version of PortMaster."
+		pm_message "This port requires the latest version of PortMaster."
 		pm_finish
 		exit 1
 	fi
@@ -69,19 +69,16 @@ fi
 # Display loading splash
 if [ -f "$GAMEDIR/patchlog.txt" ]; then
     [ "$CFW_NAME" == "muOS" ] && $ESUDO "$GAMEDIR/tools/splash" "$GAMEDIR/splash.png" 1 
-    $ESUDO "$GAMEDIR/tools/splash" "$GAMEDIR/splash.png" 4000 &
+    $ESUDO "$GAMEDIR/tools/splash" "$GAMEDIR/splash.png" 6000 &
 fi
 
 swapabxy() {
-    PYTHON=$(which python3)
     # Update SDL_GAMECONTROLLERCONFIG to swap a/b and x/y button
-
+    PYTHON=$(which python3)
     if [ "$CFW_NAME" == "knulli" ] && [ -f "$SDL_GAMECONTROLLERCONFIG_FILE" ];then
-	      # Knulli seems to use SDL_GAMECONTROLLERCONFIG_FILE (on rg40xxh at least)
         cat "$SDL_GAMECONTROLLERCONFIG_FILE" | $PYTHON $GAMEDIR/tools/swapabxy.py > "$GAMEDIR/gamecontrollerdb_swapped.txt"
-	      export SDL_GAMECONTROLLERCONFIG_FILE="$GAMEDIR/gamecontrollerdb_swapped.txt"
+        export SDL_GAMECONTROLLERCONFIG_FILE="$GAMEDIR/gamecontrollerdb_swapped.txt"
     else
-        # Other CFW use SDL_GAMECONTROLLERCONFIG
         export SDL_GAMECONTROLLERCONFIG="`echo "$SDL_GAMECONTROLLERCONFIG" | $PYTHON $GAMEDIR/tools/swapabxy.py`"
     fi
 }
