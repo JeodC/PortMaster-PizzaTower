@@ -47,7 +47,7 @@ if [ ! -f patchlog.txt ] || [ -f "$GAMEDIR/assets/data.win" ]; then
         
         # Setup mono environment variables
         DOTNETDIR="$HOME/mono"
-        DOTNETFILE="$controlfolder/libs/dotnet-runtime-8.0.12.squashfs"
+        DOTNETFILE="$controlfolder/libs/dotnet-8.0.12.squashfs"
         $ESUDO mkdir -p "$DOTNETDIR"
         $ESUDO umount "$DOTNETFILE" || true
         $ESUDO mount "$DOTNETFILE" "$DOTNETDIR"

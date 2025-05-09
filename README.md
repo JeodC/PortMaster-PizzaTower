@@ -22,14 +22,18 @@ It is the culmination of the combined efforts of those listed in the Thanks sect
 ## Runtime Requirements
 This port requires the dotnet runtime.
 
-- Download the `dotnet-runtime-8.0.12.aarch64.squashfs` file from the runtimes folder.
+- Download the `dotnet-8.0.12.aarch64.squashfs` file from the runtimes folder.
 - Add it to `PortMaster/libs` where the other runtimes are located.
-- Rename it to `dotnet-runtime-8.0.12.squashfs`.
+- Rename it to `dotnet-8.0.12.squashfs`.
 
 ## Installation
 - Purchase the game on Steam.
 - Copy all the game data to `pizzatower/assets`.
 - Have fun.
+
+## Notes
+- Peppino is yellow due to the texture hacks that make this port possible. It may be fixed in the future.
+- This port uses a file `swapabxy.txt` to align device buttons with glyph prompts. If they are incorrect for you, delete `pizzatower/swapabxy.txt` and restart the game.
 
 ## Thanks
 Tour De Pizza -- The amazing game.  

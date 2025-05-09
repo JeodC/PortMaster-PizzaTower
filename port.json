@@ -25,7 +25,7 @@
     "rtr": false,
     "exp": false,
     "runtime": [
-      "dotnet-runtime-8.0.12.squashfs"
+      "dotnet-8.0.12.squashfs"
     ],
     "store": [
       {
